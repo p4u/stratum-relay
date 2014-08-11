@@ -54,13 +54,15 @@ class Server():
         self.port = int(port)
         self.conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.conn.setblocking(1)
+        self.conn.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.log = log.Log('listener')
         self.conn.bind((self.host, self.port))
 
     def listen(self):
         self.log.info('listening on %s:%s' % (self.host, self.port))
         self.conn.listen(50)
-        current_conn, addr = self.conn.accept()
+        try: current_conn, addr = self.conn.accept()
+        except InterruptedError: return False
         current_conn.setblocking(1)
         return current_conn
 
@@ -84,21 +86,23 @@ TIMEOUT = 1000
 
 class Proxy():
 
-    def __init__(self, pool):
+    def __init__(self, pool, sharestats = None):
         self.pool = pool
         self.miners_queue = {}
         self.pool_queue = queue.Queue()
         self.pool_queue.put("")
         self.pool.setblocking(0)
         self.log = log.Log('proxy')
-        self.manager = manager.Manager()
         self.new_conns = []
+        self.shares = sharestats
+        self.manager = manager.Manager(sharestats = self.shares)
 
     def add_miner(self, connection):
-        self.miners_queue[connection.fileno()] = connection
-        self.new_conns.append(connection)
-        self.pool_queue.put(connection.recv(1024).decode())
-        connection.setblocking(0)
+        if connection:
+            self.miners_queue[connection.fileno()] = connection
+            self.new_conns.append(connection)
+            self.pool_queue.put(connection.recv(1024).decode())
+            connection.setblocking(0)
 
     def miners_broadcast(self, msg):
         for q in self.miners_queue.keys():
@@ -106,8 +110,10 @@ class Proxy():
 
     def close(self):
         for s in self.fd_to_socket.keys():
-            self.fd_to_socket[s].shutdown(0)
-            self.fd_to_socket[s].close()
+            try:
+                self.fd_to_socket[s].shutdown(0)
+                self.fd_to_socket[s].close()
+            except: pass
 
     def start(self):
         poller = select.poll()
@@ -115,6 +121,10 @@ class Proxy():
         self.fd_to_socket = {self.pool.fileno(): self.pool}
 
         while True:
+            if self.manager.force_exit:
+                self.close()
+                return False
+
             if len(self.new_conns) > 0:
                 self.fd_to_socket[
                     self.new_conns[0].fileno()] = self.new_conns[0]
@@ -169,6 +179,6 @@ class Proxy():
                             s.sendall(msg.encode())
 
                 else:
-                    self.log.error("something weird!")
+                    self.log.debug("something weird!")
 
                 time.sleep(0.1)

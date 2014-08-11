@@ -20,7 +20,7 @@ under the License.
 import time
 file = None
 stdout = True
-verbose = 3
+verbose = 4
 
 
 class Log():

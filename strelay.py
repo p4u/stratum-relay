@@ -28,32 +28,44 @@ import manager
 import connection
 import threading
 import log as Log
-
+import share_stats
+import control
 
 def signal_handler(signal, frame):
+    shutdown = True
+    controller.shutdown = True
     log.info('exit')
-    pool.shutdown(0)
-    pool.close()
+    if pool:
+        pool.shutdown(0)
+        pool.close()
     for c in connections:
-        c[1].shutdown(0)
-        c[1].close()
-    for thread in threading.enumerate():
-        if thread.isAlive():
-            thread._Thread__stop()
+        if c: c.close()
+    time.sleep(1)
     sys.exit(0)
 
+shutdown = False
 log = Log.Log('main')
+shares = share_stats.Shares()
 signal.signal(signal.SIGINT, signal_handler)
+
+# Start control thread
+controller = control.Control(sharestats=shares)
+t = threading.Thread(target=controller.start, args=[])
+t.daemon = True
+t.start()
+
+# Start listening for incoming connections
 server_listen = connection.Server("0.0.0.0", 3334)
 connections = []
 
-while True:
+while not shutdown:
+    # Wait for client connection
     miner = server_listen.listen()
     pool_connection = connection.Client("stratum.nicehash.com", 3333)
     pool = pool_connection.connect()
-    proxy = connection.Proxy(pool)
+    proxy = connection.Proxy(pool,sharestats=shares)
     proxy.add_miner(miner)
+    connections.append(proxy)
     t = threading.Thread(target=proxy.start, args=[])
     t.daemon = True
     t.start()
-    connections.append([t, miner])
