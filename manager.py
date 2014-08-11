@@ -21,92 +21,98 @@ import json
 import string
 import log
 
+
 class Manager():
-	def __init__(self):
-		self.jobs = {} # job_id -> [difficulty,#sent]
-		self.jobs_pending_ids = {} # id -> job_id
-		self.difficulty = 1
-		self.authid = None
-		self.username = '14MQUGn97dFYHGxXwaHqoCX175b9fwYUMo'
-		self.password = 'x'
-		self.real_username = None
-		self.real_password = None
-		self.log = log.Log('manager')
 
-	def add_job(self,jid):
-		self.log.debug("Adding job: %s" %jid)
-		self.jobs[jid] = [self.difficulty,0]
+    def __init__(self):
+        self.jobs = {}  # job_id -> [difficulty,#sent]
+        self.jobs_pending_ids = {}  # id -> job_id
+        self.difficulty = 1
+        self.authid = None
+        self.username = '14MQUGn97dFYHGxXwaHqoCX175b9fwYUMo'
+        self.password = 'x'
+        self.real_username = None
+        self.real_password = None
+        self.log = log.Log('manager')
 
-	def clean_jobs(self):
-		self.log.debug("Cleaning jobs")
-		self.jobs = {}
-		self.jobs_pending_ids = {}
+    def add_job(self, jid):
+        self.log.debug("Adding job: %s" % jid)
+        self.jobs[jid] = [self.difficulty, 0]
 
-	def process(self,msg):
-		output = ""
-		for l in msg.splitlines():
-			try:
-				jmsg = json.loads(l)
-			except:
-				self.log.error("cannot decode %s" %l)
-				self.log.error("-------------------------------------------------------------")
-				self.log.error(msg)
-				self.log.error("-------------------------------------------------------------")
+    def clean_jobs(self):
+        self.log.debug("Cleaning jobs")
+        self.jobs = {}
+        self.jobs_pending_ids = {}
 
-				continue
-			if 'method' in jmsg:
-				self.log.debug("got method: %s" %jmsg['method'])
-				if jmsg['method'] == 'mining.authorize' and ('params' in jmsg):
-					user = jmsg['params'][0]
-					passw = jmsg['params'][1]
-					self.log.info("got user: %s/%s" %(user,passw))
-					self.real_username = user
-					self.real_password = passw
-					jmsg['params'][0] = self.username
-					jmsg['params'][1] = self.password
-					self.authid = jmsg['id']
+    def process(self, msg):
+        output = ""
+        for l in msg.splitlines():
+            try:
+                jmsg = json.loads(l)
+            except:
+                self.log.error("cannot decode %s" % l)
+                self.log.error(msg)
 
-				elif jmsg['method'] == 'mining.notify' and ('params' in jmsg):
-					#print(jmsg)
-					new_id = jmsg['params'][0]
-					clean_jobs = jmsg['params'][8]
-					if clean_jobs: self.clean_jobs()
-					self.add_job(new_id)
+                continue
+            if 'method' in jmsg:
+                self.log.debug("got method: %s" % jmsg['method'])
+                if jmsg['method'] == 'mining.authorize' and ('params' in jmsg):
+                    user = jmsg['params'][0]
+                    passw = jmsg['params'][1]
+                    self.log.info("got user: %s/%s" % (user, passw))
+                    self.real_username = user
+                    self.real_password = passw
+                    jmsg['params'][0] = self.username
+                    jmsg['params'][1] = self.password
+                    self.authid = jmsg['id']
 
-				elif jmsg['method'] == 'mining.set_difficulty' and ('params' in jmsg):
-					self.difficulty = float(jmsg['params'][0])
-					self.log.info("setting difficulty to %s" %(self.difficulty))
-				
-				elif jmsg['method'] == 'mining.submit' and ('params' and 'id' in jmsg):
-					jid = jmsg['params'][1]
-					if jid in self.jobs:
-						self.jobs[jid][1] += 1
-						self.jobs_pending_ids[jmsg['id']] = jid
-					else:
-						self.log.warning("job %s not found" %jid)
-					jmsg['params'][0] = self.username
+                elif jmsg['method'] == 'mining.notify' and ('params' in jmsg):
+                    # print(jmsg)
+                    new_id = jmsg['params'][0]
+                    clean_jobs = jmsg['params'][8]
+                    if clean_jobs:
+                        self.clean_jobs()
+                    self.add_job(new_id)
 
-			elif 'result' and 'id' in jmsg:
-				if jmsg['id'] == self.authid:
-					if jmsg['result']:
-						self.log.info('worker authorized!')
-						self.authid = None
-					else:
-						self.log.error('worker not authorized!')
+                elif jmsg['method'] == 'mining.set_difficulty' and ('params' in jmsg):
+                    self.difficulty = float(jmsg['params'][0])
+                    self.log.info("setting difficulty to %s" %
+                                  (self.difficulty))
 
-				elif jmsg['id'] in self.jobs_pending_ids:
-					jid = self.jobs_pending_ids[jmsg['id']]
-					if self.jobs[jid][1] > 0:
-						self.jobs[jid][1] -= 1
-						diff = self.jobs[jid][0]
-						if jmsg['result']:
-							self.log.info('share ACCEPTED for jobid %s, size %s, worker %s' %(jid,diff,self.real_username))
-						else:
-							self.log.info('share REJECTED for jobid %s, size %s, worker %s' %(jid,diff,self.real_username))
-					else:
-						diff = self.jobs[jid][0]
-						self.log.info('share REJECTED for jobid %s, size %s, worker %s' %(jid,diff,self.real_username))
-						self.log.warning('job %s not submited by miner or stale share!' %jid)
+                elif jmsg['method'] == 'mining.submit' and ('params' and 'id' in jmsg):
+                    jid = jmsg['params'][1]
+                    if jid in self.jobs:
+                        self.jobs[jid][1] += 1
+                        self.jobs_pending_ids[jmsg['id']] = jid
+                    else:
+                        self.log.warning("job %s not found" % jid)
+                    jmsg['params'][0] = self.username
 
-			output += json.dumps(jmsg) + '\n'
-		return output
+            elif 'result' and 'id' in jmsg:
+                if jmsg['id'] == self.authid:
+                    if jmsg['result']:
+                        self.log.info('worker authorized!')
+                        self.authid = None
+                    else:
+                        self.log.error('worker not authorized!')
+
+                elif jmsg['id'] in self.jobs_pending_ids:
+                    jid = self.jobs_pending_ids[jmsg['id']]
+                    if self.jobs[jid][1] > 0:
+                        self.jobs[jid][1] -= 1
+                        diff = self.jobs[jid][0]
+                        if jmsg['result']:
+                            self.log.info('share ACCEPTED for jobid %s, size %s, worker %s' % (
+                                jid, diff, self.real_username))
+                        else:
+                            self.log.info('share REJECTED for jobid %s, size %s, worker %s' % (
+                                jid, diff, self.real_username))
+                    else:
+                        diff = self.jobs[jid][0]
+                        self.log.info('share REJECTED for jobid %s, size %s, worker %s' % (
+                            jid, diff, self.real_username))
+                        self.log.warning(
+                            'job %s not submited by miner or stale share!' % jid)
+
+            output += json.dumps(jmsg) + '\n'
+        return output

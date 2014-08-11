@@ -29,30 +29,31 @@ import connection
 import threading
 import log as Log
 
+
 def signal_handler(signal, frame):
-	log.info('exit')
-	pool.shutdown(0)
-	pool.close()
-	for c in connections:
-		c[1].shutdown(0)
-		c[1].close()
-	for thread in threading.enumerate():
-		if thread.isAlive():
-			thread._Thread__stop()
-	sys.exit(0)
+    log.info('exit')
+    pool.shutdown(0)
+    pool.close()
+    for c in connections:
+        c[1].shutdown(0)
+        c[1].close()
+    for thread in threading.enumerate():
+        if thread.isAlive():
+            thread._Thread__stop()
+    sys.exit(0)
 
 log = Log.Log('main')
 signal.signal(signal.SIGINT, signal_handler)
-server_listen = connection.Server("0.0.0.0",3334)
+server_listen = connection.Server("0.0.0.0", 3334)
 connections = []
 
 while True:
-	miner = server_listen.listen()
-	pool_connection = connection.Client("stratum.nicehash.com", 3333)
-	pool = pool_connection.connect()
-	proxy = connection.Proxy(pool)
-	proxy.add_miner(miner)
-	t = threading.Thread(target=proxy.start, args=[])
-	t.daemon = True
-	t.start()
-	connections.append([t,miner])
+    miner = server_listen.listen()
+    pool_connection = connection.Client("stratum.nicehash.com", 3333)
+    pool = pool_connection.connect()
+    proxy = connection.Proxy(pool)
+    proxy.add_miner(miner)
+    t = threading.Thread(target=proxy.start, args=[])
+    t.daemon = True
+    t.start()
+    connections.append([t, miner])
