@@ -24,6 +24,7 @@ import subprocess
 import threading
 import log as Log
 
+
 class Shares(object):
     shares = {}
 
@@ -73,13 +74,15 @@ class Shares(object):
             if self.shares[worker_name][0] > 10 ** 16:
                 self.shares[worker_name][0] = 0
             self.shares[worker_name][0] += dif
-            self.log.debug("registering accepted share for worker %s and diff %s" %(worker_name,dif))
+            self.log.debug(
+                "registering accepted share for worker %s and diff %s" % (worker_name, dif))
 
         else:
             if self.shares[worker_name][1] > 10 ** 16:
                 self.shares[worker_name][1] = 0
             self.shares[worker_name][1] += dif
-            self.log.debug("registering rejected share for worker %s and diff %s" %(worker_name,dif))
+            self.log.debug(
+                "registering rejected share for worker %s and diff %s" % (worker_name, dif))
 
         if sharenotify:
             self._execute_snippet(job_id, worker_name, dif, accepted)

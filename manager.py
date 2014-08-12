@@ -24,7 +24,7 @@ import log
 
 class Manager():
 
-    def __init__(self, sharestats = None, sharenotify = False):
+    def __init__(self, sharestats=None, sharenotify=False):
         self.jobs = {}  # job_id -> [difficulty,#sent]
         self.jobs_pending_ids = {}  # id -> job_id
         self.difficulty = 1
@@ -109,12 +109,14 @@ class Manager():
                             self.log.info('share ACCEPTED for jobid %s, size %s, worker %s' % (
                                 jid, diff, self.real_username))
                             if self.shares:
-                                self.shares.register_job(jid, self.real_username, diff, True, self.sharenotify)
+                                self.shares.register_job(
+                                    jid, self.real_username, diff, True, self.sharenotify)
                         else:
                             self.log.info('share REJECTED for jobid %s, size %s, worker %s' % (
                                 jid, diff, self.real_username))
                             if self.shares:
-                                self.shares.register_job(jid, self.real_username, diff, False, self.sharenotify)
+                                self.shares.register_job(
+                                    jid, self.real_username, diff, False, self.sharenotify)
                     else:
                         diff = self.jobs[jid][0]
                         self.log.info('share REJECTED for jobid %s, size %s, worker %s' % (
@@ -122,7 +124,8 @@ class Manager():
                         self.log.warning(
                             'job %s not submited by miner or stale share!' % jid)
                         if self.shares:
-                            self.shares.register_job(jid, self.real_username, diff, False, self.sharenotify)
+                            self.shares.register_job(
+                                jid, self.real_username, diff, False, self.sharenotify)
 
             output += json.dumps(jmsg) + '\n'
         return output

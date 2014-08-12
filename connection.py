@@ -61,8 +61,10 @@ class Server():
     def listen(self):
         self.log.info('listening on %s:%s' % (self.host, self.port))
         self.conn.listen(50)
-        try: current_conn, addr = self.conn.accept()
-        except InterruptedError: return False
+        try:
+            current_conn, addr = self.conn.accept()
+        except InterruptedError:
+            return False
         current_conn.setblocking(1)
         return current_conn
 
@@ -86,7 +88,7 @@ TIMEOUT = 1000
 
 class Proxy():
 
-    def __init__(self, pool, sharestats = None):
+    def __init__(self, pool, sharestats=None):
         self.pool = pool
         self.miners_queue = {}
         self.pool_queue = queue.Queue()
@@ -95,7 +97,8 @@ class Proxy():
         self.log = log.Log('proxy')
         self.new_conns = []
         self.shares = sharestats
-        self.manager = manager.Manager(sharestats = self.shares)
+        self.manager = manager.Manager(sharestats=self.shares)
+        self.shutdown = False
 
     def add_miner(self, connection):
         if connection:
@@ -109,18 +112,20 @@ class Proxy():
             self.miners_queue[q].put(msg)
 
     def close(self):
+        self.shutdown = True
         for s in self.fd_to_socket.keys():
             try:
                 self.fd_to_socket[s].shutdown(0)
                 self.fd_to_socket[s].close()
-            except: pass
+            except:
+                pass
 
     def start(self):
         poller = select.poll()
         poller.register(self.pool, READ_WRITE)
         self.fd_to_socket = {self.pool.fileno(): self.pool}
 
-        while True:
+        while not self.shutdown:
             if self.manager.force_exit:
                 self.close()
                 return False
