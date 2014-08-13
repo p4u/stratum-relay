@@ -18,7 +18,7 @@ under the License.
 '''
 
 import time
-file = None
+filename = None
 stdout = True
 verbose = 3
 
@@ -45,7 +45,7 @@ class Log():
             self.write(msg, 'debug')
 
     def write(self, msg, type):
-        if file:
+        if filename:
             with open(file, 'a') as fd:
                 fd.write("[%d][%s][%s] %s\n" %
                          (int(time.time()), type, self.id, msg))

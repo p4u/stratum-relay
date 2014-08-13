@@ -31,6 +31,7 @@ import threading
 import log as Log
 import share_stats
 import control
+import argparse
 
 
 def signal_handler(signal, frame):
@@ -45,10 +46,73 @@ def signal_handler(signal, frame):
     time.sleep(1)
     sys.exit(0)
 
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description='Stratum mining relay proxy')
+    parser.add_argument(
+        '-s',
+        dest='pool',
+        type=str,
+        default="mine.magicpool.org",
+        help='Hostname of stratum mining pool')
+    parser.add_argument(
+        '-t',
+        dest='port',
+        type=int,
+        default=3333,
+        help='Port of Stratum mining pool')
+    parser.add_argument(
+        '-l',
+        dest='listen',
+        type=str,
+        default='0.0.0.0',
+        help='IP to listen for incomming connections (miners)')
+    parser.add_argument(
+        '-p',
+        dest='listen_port',
+        type=int,
+        default=3333,
+        help='Port to listen on for incoming connections')
+    parser.add_argument(
+        '-c',
+        dest='control',
+        type=str,
+        default='127.0.0.1',
+        help='IP to listen for incomming control remote management')
+    parser.add_argument(
+        '-x',
+        dest='control_port',
+        type=int,
+        default=2222,
+        help='Control port to listen for orders')
+    parser.add_argument(
+        '-o',
+        dest='log',
+        type=str,
+        default=None,
+        help='File to store logs')
+    parser.add_argument(
+        '-q',
+        dest='quiet',
+        action="store_true",
+        help='Enable quite mode, no stdout output')
+    parser.add_argument(
+        '-v',
+        dest='verbose',
+        type=int,
+        default=3,
+        help='Verbose level from 0 to 4')
+    return parser.parse_args()
 
+args = parse_args()
 shutdown = False
-log = Log.Log('main')
 signal.signal(signal.SIGINT, signal_handler)
+
+# Set log stuff
+Log.verbose = args.verbose
+Log.filename = args.log
+Log.stdout = not args.quiet
+log = Log.Log('main')
 
 # Share statistics module
 shares = share_stats.Shares()
@@ -59,19 +123,19 @@ t = threading.Thread(target=proxies.cleaner, args=[])
 t.daemon = True
 t.start()
 
-# Start control thread
+# Set and start control thread
 controller = control.Control(proxydb=proxies, sharestats=shares)
+controller.listen_ip = args.control
+controller.listen_port = args.control_port
+controller.poolmap['pool'] = args.pool
+controller.poolmap['port'] = args.port
 t = threading.Thread(target=controller.start, args=[])
 t.daemon = True
 t.start()
 
-# Start proxy cleaner
-#t = threading.Thread(target=check_proxy_threads, args=[proxies])
-#t.daemon = True
-# t.start()
-
 # Start listening for incoming connections
-server_listen = connection.Server("0.0.0.0", 3334)
+server_listen = connection.Server(args.listen, args.listen_port)
+
 
 while not shutdown:
     # Wait for client connection

@@ -21,13 +21,15 @@ import socket
 import log
 import manager
 import time
-
+dns = {}
 
 class Client():
 
     def __init__(self, host, port):
+        global dns
         self.host = host
         self.ip = socket.gethostbyname(host)
+        dns[self.ip] = host
         self.port = int(port)
         self.conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.conn.setblocking(1)

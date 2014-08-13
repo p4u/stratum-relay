@@ -44,6 +44,8 @@ class Control(object):
         self.rm_shares = {}
         self.shutdown = False
         self.log = Log.Log("control")
+        self.listen_ip = "127.0.0.1"
+        self.listen_port = 2222
 
     def get_info(self):
         info = {}
@@ -110,7 +112,7 @@ class Control(object):
         return json.dumps(response, ensure_ascii=True)
 
     def start(self):
-        server_listen = connection.Server("127.0.0.1", 2222)
+        server_listen = connection.Server(self.listen_ip,self.listen_port)
         while not self.shutdown:
             response = {}
             command = server_listen.listen()

@@ -24,6 +24,7 @@ import select
 import socket
 import queue
 import manager
+import connection
 
 READ_ONLY = select.POLLIN | select.POLLPRI | select.POLLHUP | select.POLLERR
 READ_WRITE = READ_ONLY | select.POLLOUT
@@ -91,12 +92,15 @@ class Proxy(object):
 
     def get_info(self):
         try:
-            info = {"pool": self.pool.getpeername()}
+            pool = str(self.pool.getpeername()[0])
+            if pool in connection.dns:
+                pool = connection.dns[pool]
+            info = {"pool": pool}
             info["miners"] = []
             for s in self.fd_to_socket.keys():
                 sock = self.fd_to_socket[s]
                 if sock is not self.pool:
-                    info["miners"].append(sock.getpeername())
+                    info["miners"].append(sock.getpeername()[0])
         except:
             self.log.error("some error while fetching proxy information")
             info = {}
