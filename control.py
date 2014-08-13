@@ -23,6 +23,9 @@ import log as Log
 import share_stats
 import time
 import json
+import stratum_methods
+import copy
+import proxy
 
 
 class Control(object):
@@ -35,29 +38,38 @@ class Control(object):
         "backup": "us.clevermining.com",
         "backup_port": "3333"}
 
-    def __init__(self, sharestats=None):
-        self.proxies = []
+    def __init__(self, proxydb=None, sharestats=None):
+        self.proxies = proxydb
         self.shares = sharestats
         self.rm_shares = {}
         self.shutdown = False
         self.log = Log.Log("control")
 
-    def add_proxy(self, proxy):
-        self.proxies.append(proxy)
-
-    def del_proxy(self, proxy):
+    def get_info(self):
+        info = {}
         i = 0
-        for p in self.proxies:
-            if p is proxy:
-                del self.proxies[i]
+        for p in self.proxies.list():
+            info["proxy" + str(i)] = p.get_info()
             i += 1
+        return info
 
     def reconnect_all(self):
-        i = 0
-        for p in self.proxies:
-            p.close()
-            del self.proxies[i]
-            i += 1
+        # Send reconnect order to miners
+        self.log.info("sending reconnect to all miners")
+        proxy_list = self.proxies.list()
+        for p in proxy_list:
+            reconnect = json.dumps(stratum_methods.reconnect) + '\n'
+            p.miners_broadcast(reconnect)
+        # Wait two seconds to let the miners get the order
+        time.sleep(3)
+        # Close sockets
+        for p in proxy_list:
+            try:
+                p.close()
+            except:
+                pass
+            self.proxies.del_proxy(p)
+        tmp_proxies = []
 
     def set_pool(self, pool, port, user=None, passw=None, force=False):
         self.poolmap["pool"] = pool
@@ -118,6 +130,10 @@ class Control(object):
 
                 elif query == "cleanshares":
                     response = self.clean_shares()
+
+                elif query == "getinfo":
+                    response = json.dumps(
+                        str(self.get_info()), ensure_ascii=True)
 
                 elif query == 'setpool':
                     host = jdata['host'] if 'host' in jdata else None

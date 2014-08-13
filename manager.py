@@ -20,6 +20,7 @@ under the License.
 import json
 import string
 import log
+import stratum_methods
 
 
 class Manager():
@@ -55,8 +56,9 @@ class Manager():
             except:
                 self.log.error("cannot decode %s" % l)
                 self.log.error(msg)
-
                 continue
+
+            # Analyze packets which contains method
             if 'method' in jmsg:
                 self.log.debug("got method: %s" % jmsg['method'])
                 if jmsg['method'] == 'mining.authorize' and ('params' in jmsg):
@@ -91,6 +93,7 @@ class Manager():
                         self.log.warning("job %s not found" % jid)
                     jmsg['params'][0] = self.username
 
+            # Analyze packets which are results of a method
             elif 'result' and 'id' in jmsg:
                 if jmsg['id'] == self.authid:
                     if jmsg['result']:

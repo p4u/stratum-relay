@@ -47,7 +47,7 @@ class Log():
     def write(self, msg, type):
         if file:
             with open(file, 'a') as fd:
-                fd.write("[%d][%s][%s] %s" %
+                fd.write("[%d][%s][%s] %s\n" %
                          (int(time.time()), type, self.id, msg))
         if stdout:
             print("[%d][%s][%s] %s" % (int(time.time()), type, self.id, msg))

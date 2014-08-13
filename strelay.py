@@ -26,6 +26,7 @@ import signal
 import sys
 import manager
 import connection
+import proxy as Proxy
 import threading
 import log as Log
 import share_stats
@@ -39,29 +40,38 @@ def signal_handler(signal, frame):
     if pool:
         pool.shutdown(0)
         pool.close()
-    for c in proxies:
-        if c[1]:
-            c[1].shutdown = True
-            c[1].close()
+    for c in proxies.list():
+        proxies.del_proxy(c)
     time.sleep(1)
     sys.exit(0)
 
+
 shutdown = False
 log = Log.Log('main')
-shares = share_stats.Shares()
 signal.signal(signal.SIGINT, signal_handler)
 
+# Share statistics module
+shares = share_stats.Shares()
+
+# Start proxy cleaner thread
+proxies = Proxy.ProxyDB()
+t = threading.Thread(target=proxies.cleaner, args=[])
+t.daemon = True
+t.start()
+
 # Start control thread
-proxies = []
-controller = control.Control(sharestats=shares)
+controller = control.Control(proxydb=proxies, sharestats=shares)
 t = threading.Thread(target=controller.start, args=[])
 t.daemon = True
 t.start()
 
+# Start proxy cleaner
+#t = threading.Thread(target=check_proxy_threads, args=[proxies])
+#t.daemon = True
+# t.start()
+
 # Start listening for incoming connections
 server_listen = connection.Server("0.0.0.0", 3334)
-
-# todo: clean proxies
 
 while not shutdown:
     # Wait for client connection
@@ -69,10 +79,9 @@ while not shutdown:
     pool_connection = connection.Client(
         controller.poolmap['pool'], controller.poolmap['port'])
     pool = pool_connection.connect()
-    proxy = connection.Proxy(pool, sharestats=shares)
+    proxy = Proxy.Proxy(pool, sharestats=shares)
     proxy.add_miner(miner)
-    controller.add_proxy(proxy)
-    proxies.append([t, proxy])
     t = threading.Thread(target=proxy.start, args=[])
     t.daemon = True
     t.start()
+    proxies.add_proxy(proxy, t)
