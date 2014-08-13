@@ -67,8 +67,11 @@ class ProxyDB(object):
                         self.log.error("cannot stop thread!")
                     to_remove.append(p)
             for p in to_remove:
-                log.info("removing proxy %s" % p)
-                del self.db[p]
+                log.debug("removing proxy %s" % p)
+                try:
+                    del self.db[p]
+                except:
+                    log.debug("diccionary has changed, cannot remove %s" %p)
             time.sleep(5)
 
 
