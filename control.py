@@ -112,7 +112,7 @@ class Control(object):
         return json.dumps(response, ensure_ascii=True)
 
     def start(self):
-        server_listen = connection.Server(self.listen_ip,self.listen_port)
+        server_listen = connection.Server(self.listen_ip, self.listen_port)
         while not self.shutdown:
             response = {}
             command = server_listen.listen()

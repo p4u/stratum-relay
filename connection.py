@@ -23,6 +23,7 @@ import manager
 import time
 dns = {}
 
+
 class Client():
 
     def __init__(self, host, port):

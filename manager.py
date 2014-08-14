@@ -38,6 +38,10 @@ class Manager():
         self.shares = sharestats
         self.sharenotify = sharenotify
         self.force_exit = False
+        self.authorized = False
+
+    def get_authorize(self, user, passw):
+        return json.dumps(stratum_methods.authorize(user, passw)) + '\n'
 
     def add_job(self, jid):
         self.log.debug("Adding job: %s" % jid)
@@ -99,6 +103,7 @@ class Manager():
                     if jmsg['result']:
                         self.log.info('worker authorized!')
                         self.authid = None
+                        self.authorized = True
                     else:
                         self.log.error('worker not authorized!')
                         self.force_exit = True

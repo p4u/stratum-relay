@@ -68,11 +68,12 @@ class ProxyDB(object):
                         self.log.error("cannot stop thread!")
                     to_remove.append(p)
             for p in to_remove:
-                log.debug("removing proxy %s" % p)
+                self.log.debug("removing proxy %s" % p)
                 try:
                     del self.db[p]
                 except:
-                    log.debug("diccionary has changed, cannot remove %s" %p)
+                    self.log.debug(
+                        "diccionary has changed, cannot remove %s" % p)
             time.sleep(5)
 
 
@@ -89,6 +90,18 @@ class Proxy(object):
         self.shares = sharestats
         self.manager = manager.Manager(sharestats=self.shares)
         self.shutdown = False
+
+    def set_auth(self, user, passw):
+        if self.manager.authorized:
+            self.log.info(
+                "sending new authorization to pool %s/%s" % (user, passw))
+            self.pool_queue.put(self.manager.get_authorize(user, passw))
+            time.sleep(1)
+        else:
+            self.log.info(
+                "setting initial pool authorization to %s/%s" % (user, passw))
+        self.manager.username = user
+        self.manager.password = passw
 
     def get_info(self):
         try:

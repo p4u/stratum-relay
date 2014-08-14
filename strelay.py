@@ -46,6 +46,7 @@ def signal_handler(signal, frame):
     time.sleep(1)
     sys.exit(0)
 
+
 def parse_args():
     parser = argparse.ArgumentParser(
         description='Stratum mining relay proxy')
@@ -60,7 +61,19 @@ def parse_args():
         dest='port',
         type=int,
         default=3333,
-        help='Port of Stratum mining pool')
+        help='Port of stratum mining pool')
+    parser.add_argument(
+        '-u',
+        dest='username',
+        type=str,
+        default="14MQUGn97dFYHGxXwaHqoCX175b9fwYUMo",
+        help='Username for stratum mining pool ')
+    parser.add_argument(
+        '-a',
+        dest='password',
+        type=str,
+        default="d=1024",
+        help='Password for stratum mining pool')
     parser.add_argument(
         '-l',
         dest='listen',
@@ -144,6 +157,7 @@ while not shutdown:
         controller.poolmap['pool'], controller.poolmap['port'])
     pool = pool_connection.connect()
     proxy = Proxy.Proxy(pool, sharestats=shares)
+    proxy.set_auth(args.username, args.password)
     proxy.add_miner(miner)
     t = threading.Thread(target=proxy.start, args=[])
     t.daemon = True
