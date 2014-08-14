@@ -28,8 +28,8 @@ import connection
 
 READ_ONLY = select.POLLIN | select.POLLPRI | select.POLLHUP | select.POLLERR
 READ_WRITE = READ_ONLY | select.POLLOUT
-TIMEOUT = 80 # 80 seconds
-POOL_ITERATIONS_TIMEOUT = 600 # 60 seconds
+TIMEOUT = 80  # 80 seconds
+POOL_ITERATIONS_TIMEOUT = 600  # 60 seconds
 
 
 class ProxyDB(object):
@@ -79,6 +79,7 @@ class ProxyDB(object):
 
 
 class Proxy(object):
+
     def __init__(self, pool, sharestats=None, pxy_id=None):
         self.pool = pool
         self.miners_queue = {}
@@ -87,7 +88,7 @@ class Proxy(object):
         self.pool.setblocking(0)
         if not pxy_id:
             pxy_id = "pxy" + str(id(self.miners_queue))[10:]
-        self.id = pxy_id 
+        self.id = pxy_id
         self.log = log.Log(self.id)
         self.new_conns = []
         self.shares = sharestats
@@ -156,7 +157,7 @@ class Proxy(object):
             if self.manager.force_exit or iterations_to_die == 0:
                 self.close()
                 return False
-  
+
             if len(self.new_conns) > 0:
                 self.fd_to_socket[
                     self.new_conns[0].fileno()] = self.new_conns[0]
@@ -176,7 +177,8 @@ class Proxy(object):
                     if data:
                         if self.pool is s:
                             self.log.debug("got msg from pool: %s" % data)
-                            self.miners_broadcast(self.manager.process(data, is_pool=True))
+                            self.miners_broadcast(
+                                self.manager.process(data, is_pool=True))
                             pool_ack = True
                         else:
                             self.log.debug("got msg from miner: %s" % data)
@@ -221,7 +223,8 @@ class Proxy(object):
             else:
                 pool_ack_counter -= 1
                 if pool_ack_counter < 1:
-                    self.log.error("pool is not responding, closing connections")
+                    self.log.error(
+                        "pool is not responding, closing connections")
                     self.miners_broadcast(self.manager.get_reconnect())
                     iterations_to_die = 10
                     pool_ack_counter = POOL_ITERATIONS_TIMEOUT

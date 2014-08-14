@@ -2,7 +2,7 @@ def reconnect():
     output = {
         "id": None,
         "method": "client.reconnect",
-        "params": [] }
+        "params": []}
     return output
 
 

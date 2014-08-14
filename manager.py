@@ -45,7 +45,6 @@ class Manager():
 
     def get_reconnect(self):
         return json.dumps(stratum_methods.reconnect()) + '\n'
-        
 
     def add_job(self, jid):
         self.log.debug("Adding job: %s" % jid)
@@ -56,7 +55,7 @@ class Manager():
         self.jobs = {}
         self.jobs_pending_ids = {}
 
-    def process(self, msg, is_pool = False):
+    def process(self, msg, is_pool=False):
         output = ""
         for l in msg.splitlines():
             try:
