@@ -28,7 +28,8 @@ import connection
 
 READ_ONLY = select.POLLIN | select.POLLPRI | select.POLLHUP | select.POLLERR
 READ_WRITE = READ_ONLY | select.POLLOUT
-TIMEOUT = 1000
+TIMEOUT = 80 # 80 seconds
+POOL_ITERATIONS_TIMEOUT = 600 # 60 seconds
 
 
 class ProxyDB(object):
@@ -78,14 +79,16 @@ class ProxyDB(object):
 
 
 class Proxy(object):
-
-    def __init__(self, pool, sharestats=None):
+    def __init__(self, pool, sharestats=None, pxy_id=None):
         self.pool = pool
         self.miners_queue = {}
         self.pool_queue = queue.Queue()
         self.pool_queue.put("")
         self.pool.setblocking(0)
-        self.log = log.Log('proxy')
+        if not pxy_id:
+            pxy_id = "pxy" + str(id(self.miners_queue))[10:]
+        self.id = pxy_id 
+        self.log = log.Log(self.id)
         self.new_conns = []
         self.shares = sharestats
         self.manager = manager.Manager(sharestats=self.shares)
@@ -143,12 +146,17 @@ class Proxy(object):
         poller = select.poll()
         poller.register(self.pool, READ_WRITE)
         self.fd_to_socket = {self.pool.fileno(): self.pool}
-
+        iterations_to_die = -1
+        pool_ack_counter = POOL_ITERATIONS_TIMEOUT
         while not self.shutdown:
-            if self.manager.force_exit:
+
+            if iterations_to_die > 0:
+                iterations_to_die -= 1
+
+            if self.manager.force_exit or iterations_to_die == 0:
                 self.close()
                 return False
-
+  
             if len(self.new_conns) > 0:
                 self.fd_to_socket[
                     self.new_conns[0].fileno()] = self.new_conns[0]
@@ -156,6 +164,7 @@ class Proxy(object):
                 self.miners_queue[self.new_conns[0].fileno()] = queue.Queue()
                 del self.new_conns[0]
 
+            pool_ack = False
             events = poller.poll(TIMEOUT)
             for fd, flag in events:
                 # Retrieve the actual socket from its file descriptor
@@ -163,19 +172,20 @@ class Proxy(object):
 
                 # Socket is ready to read
                 if flag & (select.POLLIN | select.POLLPRI):
-                    data = s.recv(4096).decode()
+                    data = s.recv(8196).decode()
                     if data:
                         if self.pool is s:
                             self.log.debug("got msg from pool: %s" % data)
-                            self.miners_broadcast(self.manager.process(data))
+                            self.miners_broadcast(self.manager.process(data, is_pool=True))
+                            pool_ack = True
                         else:
                             self.log.debug("got msg from miner: %s" % data)
                             self.pool_queue.put(self.manager.process(data))
                     else:
                         if self.pool is s:
                             self.log.error("connection with pool lost!")
-                            self.close()
-                            return False
+                            self.miners_broadcast(self.manager.get_reconnect())
+                            iterations_to_die = 10
                         else:
                             self.log.error("connection with worker lost!")
                             try:
@@ -205,4 +215,15 @@ class Proxy(object):
                 else:
                     self.log.debug("something weird!")
 
-                time.sleep(0.1)
+            # check if pools is responding
+            if pool_ack:
+                pool_ack_counter = POOL_ITERATIONS_TIMEOUT
+            else:
+                pool_ack_counter -= 1
+                if pool_ack_counter < 1:
+                    self.log.error("pool is not responding, closing connections")
+                    self.miners_broadcast(self.manager.get_reconnect())
+                    iterations_to_die = 10
+                    pool_ack_counter = POOL_ITERATIONS_TIMEOUT
+
+            time.sleep(0.1)

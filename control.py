@@ -19,11 +19,11 @@ under the License.
 
 
 import connection
+import manager
 import log as Log
 import share_stats
 import time
 import json
-import stratum_methods
 import copy
 import proxy
 
@@ -46,6 +46,7 @@ class Control(object):
         self.log = Log.Log("control")
         self.listen_ip = "127.0.0.1"
         self.listen_port = 2222
+        self.manager = manager.Manager()
 
     def get_info(self):
         info = {}
@@ -60,7 +61,7 @@ class Control(object):
         self.log.info("sending reconnect to all miners")
         proxy_list = self.proxies.list()
         for p in proxy_list:
-            reconnect = json.dumps(stratum_methods.reconnect) + '\n'
+            reconnect = json.dumps(self.manager.get_reconnect()) + '\n'
             p.miners_broadcast(reconnect)
         # Wait two seconds to let the miners get the order
         time.sleep(3)

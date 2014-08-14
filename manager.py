@@ -43,6 +43,10 @@ class Manager():
     def get_authorize(self, user, passw):
         return json.dumps(stratum_methods.authorize(user, passw)) + '\n'
 
+    def get_reconnect(self):
+        return json.dumps(stratum_methods.reconnect()) + '\n'
+        
+
     def add_job(self, jid):
         self.log.debug("Adding job: %s" % jid)
         self.jobs[jid] = [self.difficulty, 0]
@@ -52,7 +56,7 @@ class Manager():
         self.jobs = {}
         self.jobs_pending_ids = {}
 
-    def process(self, msg):
+    def process(self, msg, is_pool = False):
         output = ""
         for l in msg.splitlines():
             try:
@@ -108,7 +112,8 @@ class Manager():
                         self.log.error('worker not authorized!')
                         self.force_exit = True
 
-                elif jmsg['id'] in self.jobs_pending_ids:
+                # Share accepted/rejected
+                elif is_pool and jmsg['id'] in self.jobs_pending_ids:
                     jid = self.jobs_pending_ids[jmsg['id']]
                     if self.jobs[jid][1] > 0:
                         self.jobs[jid][1] -= 1

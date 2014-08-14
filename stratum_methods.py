@@ -1,9 +1,9 @@
-
-reconnect = {
-    "id": None,
-    "method": "client.reconnect",
-    "params": []
-}
+def reconnect():
+    output = {
+        "id": None,
+        "method": "client.reconnect",
+        "params": [] }
+    return output
 
 
 def authorize(user, passw):

@@ -60,8 +60,8 @@ class Server():
         self.conn.bind((self.host, self.port))
 
     def listen(self):
-        self.log.info('listening on %s:%s' % (self.host, self.port))
-        self.conn.listen(50)
+        self.log.info('waiting for new connections on %s:%s' % (self.host, self.port))
+        self.conn.listen(100)
         try:
             current_conn, addr = self.conn.accept()
         except InterruptedError:
