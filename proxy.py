@@ -80,19 +80,19 @@ class ProxyDB(object):
 
 class Proxy(object):
 
-    def __init__(self, pool, sharestats=None, pxy_id=None):
+    def __init__(self, pool, sharestats=None, identifier=None):
         self.pool = pool
         self.miners_queue = {}
         self.pool_queue = queue.Queue()
         self.pool_queue.put("")
         self.pool.setblocking(0)
-        if not pxy_id:
-            pxy_id = "pxy" + str(id(self.miners_queue))[10:]
-        self.id = pxy_id
-        self.log = log.Log(self.id)
+        if not identifier:
+            identifier = str(id(self.miners_queue))[10:]
+        self.id = identifier
+        self.log = log.Log("pxy"+self.id)
         self.new_conns = []
         self.shares = sharestats
-        self.manager = manager.Manager(sharestats=self.shares)
+        self.manager = manager.Manager(sharestats=self.shares, identifier="mng"+self.id)
         self.shutdown = False
 
     def set_auth(self, user, passw):
@@ -135,6 +135,7 @@ class Proxy(object):
             self.miners_queue[q].put(msg)
 
     def close(self):
+        self.log.warning("closing proxy")
         self.shutdown = True
         for s in self.fd_to_socket.keys():
             try:
@@ -226,7 +227,8 @@ class Proxy(object):
                     self.log.error(
                         "pool is not responding, closing connections")
                     self.miners_broadcast(self.manager.get_reconnect())
-                    iterations_to_die = 10
+                    if iterations_to_die < 0:
+                        iterations_to_die = 10
                     pool_ack_counter = POOL_ITERATIONS_TIMEOUT
 
             time.sleep(0.1)

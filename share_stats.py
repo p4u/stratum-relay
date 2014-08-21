@@ -28,13 +28,13 @@ import log as Log
 class Shares(object):
     shares = {}
 
-    def __init__(self):
+    def __init__(self, identifier='shares'):
         self.accepted_jobs = 0
         self.rejected_jobs = 0
         self.lock = threading.Lock()
         self.last_job_time = datetime.datetime.now()
         self.shares = {}
-        self.log = Log.Log('shares')
+        self.log = Log.Log(identifier)
 
     def get_last_job_secs(self):
         return int(

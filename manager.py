@@ -25,7 +25,7 @@ import stratum_methods
 
 class Manager():
 
-    def __init__(self, sharestats=None, sharenotify=False):
+    def __init__(self, sharestats=None, sharenotify=False, identifier="manager"):
         self.jobs = {}  # job_id -> [difficulty,#sent]
         self.jobs_pending_ids = {}  # id -> job_id
         self.difficulty = 1
@@ -34,7 +34,7 @@ class Manager():
         self.password = 'x'
         self.real_username = None
         self.real_password = None
-        self.log = log.Log('manager')
+        self.log = log.Log(identifier)
         self.shares = sharestats
         self.sharenotify = sharenotify
         self.force_exit = False
