@@ -185,7 +185,7 @@ class Proxy(object):
                             self.log.debug("got msg from miner: %s" % data)
                             self.pool_queue.put(self.manager.process(data))
                     else:
-                        if self.pool is s:
+                        if self.pool is s and iterations_to_die < 0:
                             self.log.error("connection with pool lost!")
                             self.miners_broadcast(self.manager.get_reconnect())
                             iterations_to_die = 10
@@ -196,8 +196,10 @@ class Proxy(object):
                             except KeyError:
                                 self.log.error(
                                     "socket was not registered, wtf?")
-                            del self.fd_to_socket[fd]
-                            del self.miners_queue[fd]
+                            if fd in self.fd_to_socket:
+                                del self.fd_to_socket[fd]
+                            if fd in self.miners_queue:
+                                del self.miners_queue[fd]
                             s.shutdown(0)
                             s.close()
 
