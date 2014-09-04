@@ -1,0 +1,8 @@
+connection with pool lost -> send client.reconnect
+implement control set authorization
+test authorization
+if pool sends client.reconnect, disconnect the proxy
+improve getinfo (give more details)
+implement setauth and setbackup
+split extranonce
+multipool: class to manage pools, statistics, ban pools, etc.
