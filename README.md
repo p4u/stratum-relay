@@ -7,6 +7,8 @@ The rest of documentation is in the code :)
 
 It is designed for python3
 
+WARNING: this is a proof-of-concept code in alpha state 
+
 Usage
 ====================
 
