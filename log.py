@@ -1,5 +1,5 @@
 import time
-filename = None
+filename = ' '
 stdout = True
 verbose = 3
 
@@ -27,7 +27,7 @@ class Log():
 
     def write(self, msg, type):
         if filename:
-            with open(file, 'a') as fd:
+            with open(filename, 'a') as fd:
                 fd.write("[%d][%s][%s] %s\n" %
                          (int(time.time()), type, self.id, msg))
         if stdout:
