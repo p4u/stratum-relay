@@ -59,7 +59,7 @@ class Control(object):
         if user:
             self.poolmap["user"] = user
         if passw:
-            self.poolmap["passw"] = passw
+            self.poolmap["pass"] = passw
         if force:
             self.reconnect_all()
 
