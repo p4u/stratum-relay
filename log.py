@@ -31,4 +31,4 @@ class Log():
                 fd.write("[%d][%s][%s] %s\n" %
                          (int(time.time()), type, self.id, msg))
         if stdout:
-            print("[%d][%s][%s] %s" % (int(time.time()), type, self.id, msg))
+            print("[%s][%s][%s] %s" % (time.strftime("%Y-%m-%d %H:%M:%S"), type, self.id, msg))

@@ -41,8 +41,7 @@ class Control(object):
         self.log.info("sending reconnect to all miners")
         proxy_list = self.proxies.list()
         for p in proxy_list:
-            reconnect = json.dumps(self.manager.get_reconnect()) + '\n'
-            p.miners_broadcast(reconnect)
+            p.miners_broadcast(self.manager.get_reconnect())
         # Wait two seconds to let the miners get the order
         time.sleep(3)
         # Close sockets
@@ -60,7 +59,7 @@ class Control(object):
         if user:
             self.poolmap["user"] = user
         if passw:
-            self.poolmap["passw"] = passw
+            self.poolmap["pass"] = passw
         if force:
             self.reconnect_all()
 

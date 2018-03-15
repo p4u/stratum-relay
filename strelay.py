@@ -123,6 +123,8 @@ controller.listen_ip = args.control
 controller.listen_port = args.control_port
 controller.poolmap['pool'] = args.pool
 controller.poolmap['port'] = args.port
+controller.poolmap['user'] = args.username
+controller.poolmap['pass'] = args.password
 t = threading.Thread(target=controller.start, args=[])
 t.daemon = True
 t.start()
@@ -138,7 +140,7 @@ while not shutdown:
         controller.poolmap['pool'], controller.poolmap['port'])
     pool = pool_connection.connect()
     proxy = Proxy.Proxy(pool, sharestats=shares)
-    proxy.set_auth(args.username, args.password)
+    proxy.set_auth(controller.poolmap['user'], controller.poolmap['pass'])
     proxy.add_miner(miner)
     t = threading.Thread(target=proxy.start, args=[])
     t.daemon = True
