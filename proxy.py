@@ -43,7 +43,7 @@ class ProxyDB(object):
                 if self.db[p][0].shutdown:
                     to_remove.append(p)
                 # else if thread is dead
-                elif not self.db[p][1].isAlive():
+                elif not self.db[p][1].is_alive():
                     try:
                         self.db[p][1]._Thread__stop()
                     except:
