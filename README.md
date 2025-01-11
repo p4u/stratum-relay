@@ -41,15 +41,7 @@ Then it will open a new connection with the origin pool.
 You can use netcat or telnet to query statistics or control the relay on port 127.0.0.1:4444
 
 
-Contact
--------
 
-Created and currently maintained by p4u p4u(at)dabax.net
-
-Donation
---------
-
-BTC: 1BaE7aavLF17jj618QKYFc5x6NGxk7uBkC
 
 Thanks ;)
 
